@@ -15,6 +15,7 @@ const MainScreen = ({ selectedOption, selectedSecondOption, playingStyle }) => {
   const fetchRecommendations = useCallback(async () => {
     try {
       setLoading(true);
+      console.log("Attemping to fetch recommendations....")
       const response = await axios.post('https://football-suggest3-mkj3ly2lna-nw.a.run.app/get_recommendations', {
         category: selectedOption,
         subcategory: selectedSecondOption,
@@ -22,6 +23,7 @@ const MainScreen = ({ selectedOption, selectedSecondOption, playingStyle }) => {
         distance_metric: 'pearson',
         playing_style: playingStyle
       });
+      console.log("Recieved recommendations!")
       console.log('API Response:', response.data);
 
       if (Array.isArray(response.data.recommendations)) {
