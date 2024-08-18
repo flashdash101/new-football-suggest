@@ -15,7 +15,7 @@ const MainScreen = ({ selectedOption, selectedSecondOption, playingStyle }) => {
   const fetchRecommendations = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.post('https://football-suggest2-mkj3ly2lna-nw.a.run.app/get_recommendations', {
+      const response = await axios.post('https://football-suggest3-mkj3ly2lna-nw.a.run.app/get_recommendations', {
         category: selectedOption,
         subcategory: selectedSecondOption,
         min_minutes: 0,
