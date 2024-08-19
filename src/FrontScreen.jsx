@@ -44,6 +44,7 @@ const FrontScreen = () => {
   }, [selectedOption, selectedSecondOption]);
 
   const handleRecommendationsClick = () => {
+    console.log("Recommendations button clicked...getting the api values")
     if (canShowRecommendations) {
       setShowMainScreen(true);
       // determineValues();

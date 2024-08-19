@@ -2,62 +2,37 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { debounce } from 'lodash';
 import PlayerCard from './PlayerCard';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Radar, RadarChart, PolarGrid, Legend, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { positionStats, statNames, positionMapping, defaultPositionStats } from './statsConfigs';
 const MainScreen = ({ selectedOption, selectedSecondOption, playingStyle }) => {
-  const [recommendations, setRecommendations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [showChart, setShowChart] = useState(false);
-  const isInitialMount = React.useRef(true);
+
+  const { data: recommendationsData, isLoading, isError, error } = useQuery({
+    queryKey: ['recommendations', selectedOption, selectedSecondOption, playingStyle],
+    queryFn: () => fetchRecommendations({ category: selectedOption, subcategory: selectedSecondOption, playingStyle }),
+    enabled: !!selectedOption && !!selectedSecondOption,
+  });
+
+  const recommendations = recommendationsData?.recommendations || recommendationsData || [];
+
+  const DEBOUNCE_VALUE = 150;
+
+  const fetchRecommendations = async ({ category, subcategory, playingStyle }) => {
+    console.log("Attempting to fetch recommendations...");
+    const response = await axios.post('https://football-suggest3-mkj3ly2lna-nw.a.run.app/get_recommendations', {
+      category,
+      subcategory,
+      min_minutes: 0,
+      distance_metric: 'pearson',
+      playing_style: playingStyle
+    });
+    console.log("Received recommendations!");
+    console.log('API Response:', response.data);
+    return response.data;
+  };
 
 
-  const fetchRecommendations = useCallback(async () => {
-    try {
-      setLoading(true);
-      console.log("Attemping to fetch recommendations....")
-      const response = await axios.post('https://football-suggest3-mkj3ly2lna-nw.a.run.app/get_recommendations', {
-        category: selectedOption,
-        subcategory: selectedSecondOption,
-        min_minutes: 0,
-        distance_metric: 'pearson',
-        playing_style: playingStyle
-      });
-      console.log("Recieved recommendations!")
-      console.log('API Response:', response.data);
-
-      if (Array.isArray(response.data.recommendations)) {
-        setRecommendations(response.data.recommendations);
-      } else if (Array.isArray(response.data)) {
-        setRecommendations(response.data);
-      } else {
-        throw new Error('Unexpected response format');
-      }
-    } catch (err) {
-      console.error('Error details:', err);
-      setError('We failed to fetch recommendations... bear with us: ' + (err.response?.data?.error || err.message));
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedOption, selectedSecondOption, playingStyle]);
-
-  const debouncedFetchRecommendations = useCallback(
-    debounce(fetchRecommendations, 150),
-    [fetchRecommendations]
-  );
-
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-    } else {
-      console.log('Fetching recommendations...');
-      debouncedFetchRecommendations();
-    }
-    // Cleanup function
-    return () => {
-      debouncedFetchRecommendations.cancel();
-    };
-  }, [debouncedFetchRecommendations]);
 
   const mapPositionToKey = (position) => {
     const positionMap = {
@@ -149,9 +124,9 @@ const MainScreen = ({ selectedOption, selectedSecondOption, playingStyle }) => {
 
   const toggleView = () => setShowChart(!showChart);
 
-  if (loading) return <div>Loading recommendations...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!Array.isArray(recommendations) || recommendations.length === 0) {
+  if (isLoading) return <div>Loading recommendations...</div>;
+  if (isError) return <div>Error: {error.message}</div>;
+  if (!recommendations || recommendations.length === 0) {
     return <div>No recommendations available.</div>;
   }
 
